@@ -16,7 +16,7 @@ Then visit http://localhost:5000 in your browser.
 
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 
 
 app = Flask(__name__)
@@ -139,9 +139,19 @@ def dashboard():
         else:
             grouped_items[category]['good'].append(item)
 
+    # Compute summary metrics for the dashboard
+    total_items = len(items)
+    # Count the number of items in each status bucket
+    needs_count = sum(len(cats['needs']) for cats in grouped_items.values())
+    low_count = sum(len(cats['low']) for cats in grouped_items.values())
+    good_count = sum(len(cats['good']) for cats in grouped_items.values())
     return render_template(
         'dashboard.html',
         grouped_items=grouped_items,
+        total_items=total_items,
+        needs_count=needs_count,
+        low_count=low_count,
+        good_count=good_count,
     )
 
 
@@ -170,6 +180,7 @@ def inventory():
                         (int(quantity), int(item_id)),
                     )
                 conn.commit()
+                flash('Item updated successfully!', 'success')
         # When adding a new item, the form is handled by the /add route
     items = conn.execute('SELECT * FROM inventory ORDER BY category, item_name').fetchall()
     conn.close()
@@ -198,6 +209,7 @@ def add_item():
             (item_name.strip(), category, int(quantity), th_value),
         )
         conn.commit()
+        flash(f'Added new item "{item_name.strip()}"!', 'success')
     conn.close()
     return redirect(url_for('inventory'))
 
