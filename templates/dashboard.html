@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Inventory Dashboard</h2>
+
+<section>
+    <h3>Needs to Buy</h3>
+    {% if needs_to_buy %}
+        <ul>
+        {% for item in needs_to_buy %}
+            <li>{{ item['item_name'] }} ({{ item['quantity'] }})</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nothing needs to be bought.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h3>Low Stock (Below 5)</h3>
+    {% if low_items %}
+        <ul>
+        {% for item in low_items %}
+            <li>{{ item['item_name'] }} ({{ item['quantity'] }})</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No low stock items.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h3>All Good</h3>
+    {% if good_items %}
+        <ul>
+        {% for item in good_items %}
+            <li>{{ item['item_name'] }} ({{ item['quantity'] }})</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No items available.</p>
+    {% endif %}
+</section>
+
+{% endblock %}
