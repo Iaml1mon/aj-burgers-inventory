@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Update Inventory</h2>
+
+<table>
+    <tr>
+        <th>Item</th>
+        <th>Quantity</th>
+        <th>Action</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <form method="post">
+            <td>{{ item['item_name'] }}</td>
+            <td>
+                <input type="number" name="quantity" value="{{ item['quantity'] }}" />
+                <input type="hidden" name="id" value="{{ item['id'] }}" />
+            </td>
+            <td>
+                <input type="submit" value="Update" />
+            </td>
+        </form>
+    </tr>
+    {% endfor %}
+</table>
+
+<h3>Add New Item</h3>
+<form method="post" action="{{ url_for('add_item') }}">
+    <input type="text" name="item_name" placeholder="Item name" required />
+    <input type="number" name="quantity" placeholder="Quantity" required />
+    <input type="submit" value="Add Item" />
+</form>
+
+{% endblock %}
