@@ -1,69 +1,47 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="mb-4">Inventory Dashboard</h2>
+<h2 class="page-title">Inventory Dashboard</h2>
 
 {# Summary cards showing counts of each status #}
 {% if grouped_items %}
-    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
-        <div class="col">
-            <div class="card shadow-sm text-center">
-                <div class="card-body">
-                    <i class="bi bi-box-seam-fill display-6 text-primary mb-2"></i>
-                    <h6 class="card-title mb-1">Total Items</h6>
-                    <p class="h4 fw-bold mb-0">{{ total_items }}</p>
-                </div>
-            </div>
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="title">Total Items</div>
+            <div class="value">{{ total_items }}</div>
         </div>
-        <div class="col">
-            <div class="card shadow-sm text-center">
-                <div class="card-body">
-                    <i class="bi bi-cart-x-fill display-6 text-danger mb-2"></i>
-                    <h6 class="card-title mb-1">Needs to Buy</h6>
-                    <p class="h4 fw-bold mb-0 text-danger">{{ needs_count }}</p>
-                </div>
-            </div>
+        <div class="summary-card">
+            <div class="title">Needs to Buy</div>
+            <div class="value text-danger">{{ needs_count }}</div>
         </div>
-        <div class="col">
-            <div class="card shadow-sm text-center">
-                <div class="card-body">
-                    <i class="bi bi-exclamation-triangle-fill display-6 text-warning mb-2"></i>
-                    <h6 class="card-title mb-1">Low Stock</h6>
-                    <p class="h4 fw-bold mb-0 text-warning">{{ low_count }}</p>
-                </div>
-            </div>
+        <div class="summary-card">
+            <div class="title">Low Stock</div>
+            <div class="value text-warning">{{ low_count }}</div>
         </div>
-        <div class="col">
-            <div class="card shadow-sm text-center">
-                <div class="card-body">
-                    <i class="bi bi-check-circle-fill display-6 text-success mb-2"></i>
-                    <h6 class="card-title mb-1">All Good</h6>
-                    <p class="h4 fw-bold mb-0 text-success">{{ good_count }}</p>
-                </div>
-            </div>
+        <div class="summary-card">
+            <div class="title">All Good</div>
+            <div class="value text-success">{{ good_count }}</div>
         </div>
     </div>
 
     {# Category cards #}
     {% for category, data in grouped_items.items() %}
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>{{ category }}</h5>
-        </div>
+    <div class="card">
+        <div class="card-header">{{ category }}</div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <h6 class="text-danger mb-2"><i class="bi bi-cart-x-fill me-1"></i>Needs to Buy</h6>
+            <div class="category-row">
+                <div class="category-column">
+                    <h6 class="text-danger">Needs to Buy</h6>
                     {% if data['needs'] %}
-                        <ul class="list-group list-group-flush">
+                        <ul class="list-group">
                             {% for item in data['needs'] %}
                                 <li class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-between">
                                         <span>{{ item['item_name'] }}</span>
-                                        <span class="fw-semibold text-danger">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
+                                        <span class="text-danger">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
                                     </div>
-                                    <div class="progress my-1" style="height: 6px;">
-                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-danger" style="width: 0%"></div>
                                     </div>
                                 </li>
                             {% endfor %}
@@ -72,19 +50,19 @@
                         <p class="text-muted">Nothing to buy.</p>
                     {% endif %}
                 </div>
-                <div class="col-md-4 mb-3">
-                    <h6 class="text-warning mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Low Stock</h6>
+                <div class="category-column">
+                    <h6 class="text-warning">Low Stock</h6>
                     {% if data['low'] %}
-                        <ul class="list-group list-group-flush">
+                        <ul class="list-group">
                             {% for item in data['low'] %}
                                 {% set percentage = (100 * item['quantity'] // item['threshold']) if item['threshold'] else 0 %}
                                 <li class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-between">
                                         <span>{{ item['item_name'] }}</span>
-                                        <span class="fw-semibold text-warning">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
+                                        <span class="text-warning">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
                                     </div>
-                                    <div class="progress my-1" style="height: 6px;">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ percentage }}%" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
                                     </div>
                                 </li>
                             {% endfor %}
@@ -93,19 +71,19 @@
                         <p class="text-muted">All items above threshold.</p>
                     {% endif %}
                 </div>
-                <div class="col-md-4 mb-3">
-                    <h6 class="text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>All Good</h6>
+                <div class="category-column">
+                    <h6 class="text-success">All Good</h6>
                     {% if data['good'] %}
-                        <ul class="list-group list-group-flush">
+                        <ul class="list-group">
                             {% for item in data['good'] %}
                                 {% set percentage = (100 * item['quantity'] // item['threshold']) if item['threshold'] else 0 %}
                                 <li class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-between">
                                         <span>{{ item['item_name'] }}</span>
-                                        <span class="fw-semibold text-success">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
+                                        <span class="text-success">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
                                     </div>
-                                    <div class="progress my-1" style="height: 6px;">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" style="width: {{ percentage }}%"></div>
                                     </div>
                                 </li>
                             {% endfor %}

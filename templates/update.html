@@ -1,40 +1,29 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="mb-4">Update Inventory</h2>
+<h2 class="page-title">Update Inventory</h2>
 
 <!-- Search and filter controls -->
-<div class="row mb-3 g-3 align-items-center">
-    <div class="col-md-6">
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" id="searchInput" class="form-control" placeholder="Search items...">
-        </div>
-    </div>
-    <div class="col-md-6 text-md-end">
-        <div class="btn-group" role="group" aria-label="Filter inventory">
-            <input type="radio" class="btn-check" name="filterOptions" id="filter-all" value="all" autocomplete="off" checked>
-            <label class="btn btn-outline-secondary" for="filter-all">All</label>
-            <input type="radio" class="btn-check" name="filterOptions" id="filter-needs" value="needs" autocomplete="off">
-            <label class="btn btn-outline-danger" for="filter-needs">Needs</label>
-            <input type="radio" class="btn-check" name="filterOptions" id="filter-low" value="low" autocomplete="off">
-            <label class="btn btn-outline-warning" for="filter-low">Low</label>
-            <input type="radio" class="btn-check" name="filterOptions" id="filter-good" value="good" autocomplete="off">
-            <label class="btn btn-outline-success" for="filter-good">Good</label>
-        </div>
+<div class="search-filter">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search items...">
+    <div class="filter-group">
+        <label><input type="radio" name="filterOptions" value="all" checked> All</label>
+        <label><input type="radio" name="filterOptions" value="needs"> Needs</label>
+        <label><input type="radio" name="filterOptions" value="low"> Low</label>
+        <label><input type="radio" name="filterOptions" value="good"> Good</label>
     </div>
 </div>
 
 <!-- Inventory table for editing existing items -->
-<div class="table-responsive mb-5">
-    <table class="table table-striped align-middle">
-        <thead class="table-light">
+<div class="inventory-table-wrapper">
+    <table class="inventory-table">
+        <thead>
             <tr>
-                <th scope="col">Category</th>
-                <th scope="col">Item</th>
-                <th scope="col">Quantity</th>
-                <th scope="col">Threshold</th>
-                <th scope="col">Action</th>
+                <th>Category</th>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Threshold</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -44,18 +33,15 @@
                 <form method="post">
                     <td>{{ item['category'] }}</td>
                     <td>{{ item['item_name'] }}</td>
-                    <td style="max-width:120px;">
-                        <input type="number" name="quantity" value="{{ item['quantity'] }}" class="form-control form-control-sm" />
-                    </td>
-                    <td style="max-width:120px;">
-                        <input type="number" name="threshold" value="{{ item['threshold'] }}" class="form-control form-control-sm" />
+                    <td>
+                        <input type="number" name="quantity" value="{{ item['quantity'] }}" class="form-control" />
                     </td>
                     <td>
-                        <!-- Hidden field to identify which item is being updated -->
+                        <input type="number" name="threshold" value="{{ item['threshold'] }}" class="form-control" />
+                    </td>
+                    <td>
                         <input type="hidden" name="update_id" value="{{ item['id'] }}" />
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-save me-1"></i>Update
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-sm">Update</button>
                     </td>
                 </form>
             </tr>
@@ -65,31 +51,33 @@
 </div>
 
 <!-- Form for adding a new item -->
-<h3 class="mb-3">Add New Item</h3>
-<form method="post" action="{{ url_for('add_item') }}" class="row g-3">
-    <div class="col-md-4">
-        <label for="item_name" class="form-label">Item Name</label>
-        <input type="text" id="item_name" name="item_name" class="form-control" placeholder="Enter item name" required />
-    </div>
-    <div class="col-md-3">
-        <label for="category" class="form-label">Category</label>
-        <select id="category" name="category" class="form-select" required>
-            <option value="" disabled selected>Select category</option>
-            {% for cat in categories %}
-            <option value="{{ cat }}">{{ cat }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label for="quantity" class="form-label">Quantity</label>
-        <input type="number" id="quantity" name="quantity" class="form-control" placeholder="0" required />
-    </div>
-    <div class="col-md-2">
-        <label for="threshold" class="form-label">Threshold (optional)</label>
-        <input type="number" id="threshold" name="threshold" class="form-control" placeholder="Default" />
-    </div>
-    <div class="col-md-1 d-flex align-items-end">
-        <button type="submit" class="btn btn-success w-100">Add</button>
+<h3 class="subheading">Add New Item</h3>
+<form method="post" action="{{ url_for('add_item') }}" class="add-item-form">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="item_name">Item Name</label>
+            <input type="text" id="item_name" name="item_name" required />
+        </div>
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="" disabled selected>Select category</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="quantity">Quantity</label>
+            <input type="number" id="quantity" name="quantity" placeholder="0" required />
+        </div>
+        <div class="form-group">
+            <label for="threshold">Threshold (optional)</label>
+            <input type="number" id="threshold" name="threshold" placeholder="Default" />
+        </div>
+        <div class="form-group form-group-button">
+            <button type="submit" class="btn btn-success">Add</button>
+        </div>
     </div>
 </form>
 
