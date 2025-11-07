@@ -4,45 +4,74 @@
 
 {% block content %}
   <h1 class="page-title">Update Inventory</h1>
-  <form method="post" class="inventory-form">
-    <table class="inventory-table">
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th>Item</th>
-          <th>Quantity</th>
-          <th>Threshold</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-          <tr>
-            <td>{{ item.category }}</td>
-            <td>{{ item.item_name }}</td>
-            <td>
-              <div class="qty-control">
-                <button type="button" class="qty-btn" data-step="-1" data-target="quantity_{{ item.id }}">−</button>
-                <input type="number" id="quantity_{{ item.id }}" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="0" />
-                <button type="button" class="qty-btn" data-step="1" data-target="quantity_{{ item.id }}">+</button>
-              </div>
-            </td>
-            <td>
-              <input type="number" name="threshold_{{ item.id }}" value="{{ item.threshold }}" min="0" />
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <div style="text-align: right;">
-      <button type="submit" class="btn-save">Save Changes</button>
+  <div class="search-filter">
+    <input type="text" id="search" class="search-input" placeholder="Search items or categories…" oninput="updateFilters()" />
+    <div class="filter-buttons">
+      <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button type="button" class="filter-btn" data-filter="needs" onclick="setFilter('needs')">Out of Stock</button>
+      <button type="button" class="filter-btn" data-filter="low" onclick="setFilter('low')">Low Stock</button>
+      <button type="button" class="filter-btn" data-filter="good" onclick="setFilter('good')">Good</button>
+    </div>
+  </div>
+  <form method="post" id="inventory-form">
+    <div class="inventory-list">
+      {% for item in items %}
+      <div class="inventory-item-card {{ 'needs' if item.quantity == 0 else 'low' if item.quantity < item.threshold else 'good' }}" data-name="{{ item.item_name | lower }}" data-category="{{ item.category | lower }}" data-status="{{ 'needs' if item.quantity == 0 else 'low' if item.quantity < item.threshold else 'good' }}">
+        <div class="item-header">
+          <span class="item-name">{{ item.item_name }}</span>
+          <span class="item-category">{{ item.category }}</span>
+        </div>
+        <div class="item-quantity">
+          <label>Quantity</label>
+          <div class="qty-control">
+            <button type="button" class="qty-btn" data-step="-10" data-target="quantity_{{ item.id }}">−10</button>
+            <button type="button" class="qty-btn" data-step="-5" data-target="quantity_{{ item.id }}">−5</button>
+            <button type="button" class="qty-btn" data-step="-1" data-target="quantity_{{ item.id }}">−1</button>
+            <input type="number" id="quantity_{{ item.id }}" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="0" />
+            <button type="button" class="qty-btn" data-step="1" data-target="quantity_{{ item.id }}">+1</button>
+            <button type="button" class="qty-btn" data-step="5" data-target="quantity_{{ item.id }}">+5</button>
+            <button type="button" class="qty-btn" data-step="10" data-target="quantity_{{ item.id }}">+10</button>
+          </div>
+        </div>
+        <div class="item-threshold">
+          <label>Threshold</label>
+          <input type="number" name="threshold_{{ item.id }}" value="{{ item.threshold }}" min="0" />
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="save-container">
+      <button type="submit" class="btn-save btn-block">Save Changes</button>
     </div>
   </form>
 
   <script>
-    // Add functionality for quantity increment/decrement buttons
+    // Filtering logic
+    // Set initial filter from query parameter (default to 'all')
+    let currentFilter = '{{ request.args.get("filter", "all") }}';
+    function setFilter(filter) {
+      currentFilter = filter;
+      // Update active state on buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+      updateFilters();
+    }
+    function updateFilters() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      document.querySelectorAll('.inventory-item-card').forEach(card => {
+        const name = card.dataset.name;
+        const category = card.dataset.category;
+        const status = card.dataset.status;
+        const matchSearch = name.includes(searchTerm) || category.includes(searchTerm);
+        const matchFilter = currentFilter === 'all' || status === currentFilter;
+        card.style.display = (matchSearch && matchFilter) ? '' : 'none';
+      });
+    }
+    // Quantity adjust
     document.addEventListener('DOMContentLoaded', () => {
-      const buttons = document.querySelectorAll('.qty-btn');
-      buttons.forEach(btn => {
+      // Attach events to increment/decrement buttons
+      document.querySelectorAll('.qty-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const targetId = btn.dataset.target;
           const step = parseInt(btn.dataset.step);
@@ -54,6 +83,8 @@
           }
         });
       });
+      // Apply initial filter when page loads
+      setFilter(currentFilter);
     });
   </script>
 {% endblock %}
