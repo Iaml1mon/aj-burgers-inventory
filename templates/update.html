@@ -18,28 +18,21 @@
   </div>
   <form method="post" id="inventory-form">
     <div class="inventory-list">
-      {% for category, items_list in categories.items() %}
-        <div class="category-header">{{ category }}</div>
-        {% for item in items_list %}
-        <div class="inventory-item-card {{ item.status }}" data-name="{{ item.item_name | lower }}" data-category="{{ category | lower }}" data-status="{{ item.status }}">
-          <div class="item-header">
-            <div class="item-header-left">
-              {% if item.status == 'needs' or item.status == 'low' %}<span class="pulse-icon {{ item.status }}"></span>{% endif %}
-              <span class="item-name">{{ item.item_name }}</span>
-            </div>
-            <span class="status-badge {{ item.status }}">{{ 'Out' if item.status == 'needs' else 'Low' if item.status == 'low' else 'Good' }}</span>
-          </div>
-          <div class="item-quantity">
-            <label>Quantity</label>
-            <input type="number" class="qty-number" id="quantity_{{ item.id }}" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="0" max="{{ item.threshold * 3 if item.threshold > 0 else 100 }}" oninput="document.getElementById('slider_{{ item.id }}').value = this.value" />
-            <input type="range" class="qty-slider" id="slider_{{ item.id }}" min="0" max="{{ item.threshold * 3 if item.threshold > 0 else 100 }}" value="{{ item.quantity }}" step="1" oninput="document.getElementById('quantity_{{ item.id }}').value = this.value" />
-          </div>
-          <div class="item-threshold">
-            <label>Threshold</label>
-            <input type="number" name="threshold_{{ item.id }}" value="{{ item.threshold }}" min="0" />
-          </div>
+      {% for item in items %}
+      <div class="inventory-item-card {{ item.status }}" data-name="{{ item.item_name | lower }}" data-category="{{ item.category | lower }}" data-status="{{ item.status }}">
+        <div class="item-header-single">
+          <span class="item-name">{{ item.item_name }}</span>
+          <small class="item-category">{{ item.category }}</small>
         </div>
-        {% endfor %}
+        <div class="item-field">
+          <label for="quantity_{{ item.id }}">Quantity</label>
+          <input type="number" id="quantity_{{ item.id }}" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="0" />
+        </div>
+        <div class="item-field">
+          <label for="threshold_{{ item.id }}">Threshold</label>
+          <input type="number" id="threshold_{{ item.id }}" name="threshold_{{ item.id }}" value="{{ item.threshold }}" min="0" />
+        </div>
+      </div>
       {% endfor %}
     </div>
     <div class="save-container">
