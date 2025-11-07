@@ -97,8 +97,55 @@ html, body {
 .flash-message.warning { background-color: var(--yellow); color: var(--dark); }
 .flash-message.error { background-color: var(--red); }
 
-/* Summary cards */
-.summary-cards {
+/* Summary section for dashboard */
+.summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Summary card base styling */
+.summary-card {
+  display: flex;
+  align-items: center;
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+  color: inherit;
+  border-left: 6px solid var(--primary);
+  transition: transform 0.1s;
+}
+.summary-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Colour accents for different summary cards */
+.summary-card.total { border-left-color: var(--primary); }
+.summary-card.needs { border-left-color: var(--red); }
+.summary-card.low   { border-left-color: var(--yellow); }
+.summary-card.good  { border-left-color: var(--green); }
+
+.summary-card .icon {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+}
+.summary-card .info .count {
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1.1;
+}
+.summary-card .info .label {
+  font-size: 0.8rem;
+  color: var(--dark);
+  text-transform: uppercase;
+  letter-spacing: 0.03rem;
+}
+
+/* Legacy summary cards (if still used) */
+/* .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
@@ -121,7 +168,7 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.05rem;
   color: var(--dark);
-}
+} */
 
 /* Category cards */
 .category-cards {
@@ -142,6 +189,8 @@ html, body {
 .status-columns {
   display: flex;
   gap: 1rem;
+  /* Ensure columns wrap on mobile */
+  flex-wrap: wrap;
 }
 .status-column {
   flex: 1;
@@ -171,6 +220,18 @@ html, body {
 .badge.needs { background-color: var(--red); }
 .badge.low { background-color: var(--yellow); color: var(--dark); }
 .badge.good { background-color: var(--green); }
+
+/* Responsive adjustments for category cards and status columns */
+@media (max-width: 768px) {
+  /* Stack the status columns vertically on small screens */
+  .status-columns {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .status-column {
+    flex: 1 1 100%;
+  }
+}
 
 /* Inventory table and form */
 .inventory-table {
