@@ -1,219 +1,265 @@
-"""
-AJ Burgers Inventory Management Application
+"""AJ Burgers Inventory Management Application
 
-This simple Flask app provides a web interface for tracking inventory for a food truck.
-Users can view a dashboard that classifies items by stock level and update quantities
-or add new items. Data is persisted in a local SQLite database so that it survives
-across sessions.
-
-To run the app:
-
-    pip install -r requirements.txt
-    python app.py
-
-Then visit http://localhost:5000 in your browser.
+This Flask application provides a self‑contained, responsive inventory management system for a food
+truck.  It offers a dashboard overview, bulk updating of stock levels, and an interactive order
+generation page with WhatsApp sharing.  The UI avoids external CDN dependencies so it works
+reliably even on networks that block third‑party resources.
 """
 
-import os
-import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, flash
+import sqlite3
+import os
+from urllib.parse import quote
 
 
 app = Flask(__name__)
-
-# Path to the SQLite database file
-DATABASE = os.path.join(os.path.dirname(__file__), 'inventory.db')
+app.secret_key = "replace_with_a_random_secret"
 
 
 def get_db_connection():
-    """Return a connection to the SQLite database with row factory set."""
-    conn = sqlite3.connect(DATABASE)
+    """Create a connection to the SQLite database and ensure row access by name."""
+    conn = sqlite3.connect("inventory.db")
     conn.row_factory = sqlite3.Row
     return conn
 
 
+# Default thresholds and initial inventory definitions.  These reflect the AJ Burgers shopping
+# checklist.  Each item belongs to a category and has an associated threshold indicating when
+# reordering should occur.
+DEFAULT_INVENTORY = {
+    "Buns & Chips": {
+        "Chips": 20,
+        "Buns": 30,
+    },
+    "Veggies": {
+        "Lettuce": 10,
+        "Tomatoes": 10,
+        "Onions": 10,
+        "Pickles": 5,
+        "Beetroot": 5,
+    },
+    "Meats & Poultry": {
+        "Chicken": 10,
+        "Beef": 10,
+        "Wagyu": 5,
+        "Eggs": 24,
+    },
+    "Cheeses": {
+        "Block": 5,
+        "Shredded Cheese": 5,
+        "Butter": 5,
+    },
+    "Drinks": {
+        "Coke": 24,
+        "Coke Zero": 24,
+        "Solo": 24,
+        "Fanta": 24,
+        "Water": 24,
+    },
+    "Sauces & Condiments": {
+        "Ketchup": 5,
+        "Chilli": 5,
+        "Mustard": 5,
+        "Mayonnaise": 5,
+        "BBQ sauce": 5,
+        "Special Sauce": 5,
+    },
+    "Packaging & Delivery": {
+        "Burger boxes": 50,
+        "Uber bags": 20,
+        "Plastic Bags": 50,
+    },
+    "Cleaning Materials": {
+        "Dish soap": 2,
+        "Hand Soap": 2,
+        "Floor Cleaning Liquid": 2,
+        "Paper towels": 12,
+        "Silver Scrubbers": 5,
+        "Lemon Juice": 5,
+        "Gloves": 20,
+        "Sprays": 2,
+    },
+    "Stationery": {
+        "Order pads": 5,
+        "Pens": 12,
+        "Markers": 6,
+        "Receipt rolls": 10,
+        "Staplers": 2,
+    },
+    "Oils & Gas": {
+        "Cooking oil": 10,
+        "Gas": 3,
+        "Small Gas": 3,
+    },
+    "Salt & Spices": {
+        "Chicken Salt": 5,
+        "Normal Salt": 5,
+        "Tasting Salt": 5,
+        "Ground Pepper": 5,
+    },
+    "Others": {
+        # Add any miscellaneous items here with reasonable thresholds.
+    },
+}
+
+
 def init_db():
-    """
-    Initialize the SQLite database.  If the database file does not exist, this
-    function creates a new `inventory` table with columns for name, category,
-    quantity and threshold.  It also populates the table with a default set
-    of items grouped by category defined in `DEFAULT_INVENTORY`.  Each item
-    starts with a quantity of 0 so that the dashboard will immediately
-    classify them as needing to be bought.
-    """
-    if os.path.exists(DATABASE):
-        # Nothing to do if the database already exists
+    """Initialise the SQLite database with the default inventory if it doesn't exist."""
+    if os.path.exists("inventory.db"):
         return
-
     conn = get_db_connection()
-    # Create table with category and threshold columns
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS inventory (\n"
-        "    id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
-        "    item_name TEXT NOT NULL,\n"
-        "    category TEXT NOT NULL,\n"
-        "    quantity INTEGER NOT NULL,\n"
-        "    threshold INTEGER NOT NULL\n"
-        ")"
+        "CREATE TABLE inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, item_name TEXT, category TEXT, quantity INTEGER, threshold INTEGER)"
     )
-
-    # Populate the table with default inventory items if empty
-    cursor = conn.execute("SELECT COUNT(*) as count FROM inventory")
-    count = cursor.fetchone()["count"]
-    if count == 0:
-        # Insert default items with quantity 0
-        for category, items in DEFAULT_INVENTORY.items():
-            # Determine a sensible default threshold per category
-            default_threshold = DEFAULT_THRESHOLDS.get(category, 5)
-            for item in items:
-                conn.execute(
-                    "INSERT INTO inventory (item_name, category, quantity, threshold) VALUES (?, ?, ?, ?)",
-                    (item, category, 0, default_threshold),
-                )
+    for category, items in DEFAULT_INVENTORY.items():
+        for item_name, threshold in items.items():
+            # Default quantity is zero for new items
+            conn.execute(
+                "INSERT INTO inventory (item_name, category, quantity, threshold) VALUES (?, ?, ?, ?)",
+                (item_name, category, 0, threshold),
+            )
     conn.commit()
     conn.close()
 
 
-# Default inventory grouped by category.  These values come from the user‑provided
-# restaurant shopping checklist.  If you need to modify these defaults in the
-# future, update this dictionary accordingly.
-DEFAULT_INVENTORY = {
-    "Buns & Chips": ["Chips", "Buns"],
-    "Veggies": ["Lettuce", "Tomatoes", "Onions", "Pickles", "Beetroot"],
-    "Meats & Poultry": ["Chicken", "Beef", "Wagyu", "Eggs"],
-    "Cheeses": ["Block", "Shredded Cheese", "Butter"],
-    "Drinks": ["Coke", "Coke Zero", "Solo", "Fanta", "Water"],
-    "Sauces & Condiments": ["Ketchup", "Chilli", "Mustard", "Mayonnaise", "BBQ sauce", "Special Sauce"],
-    "Packaging & Delivery": ["Burger boxes", "Uber bags", "Plastic Bags"],
-    "Cleaning Materials": ["Dish soap", "Hand Soap", "Floor Cleaning Liquid", "Paper towels", "Silver Scrubbers", "Lemon Juice", "Gloves", "Sprays"],
-    "Stationery": ["Order pads", "Pens", "Markers", "Receipt rolls", "Staplers"],
-    "Oils & Gas": ["Cooking oil", "Gas", "Small Gas"],
-    "Salt & Spices": ["Chicken Salt", "Normal Salt", "Tasting Salt", "Ground Pepper"],
-    "Others": [],
-}
-
-# Suggested default reorder thresholds per category.  These values determine when
-# an item is considered "low stock" on the dashboard.  Adjust these to suit
-# your business needs.  Any category not present here defaults to 5.
-DEFAULT_THRESHOLDS = {
-    "Buns & Chips": 10,
-    "Veggies": 5,
-    "Meats & Poultry": 5,
-    "Cheeses": 3,
-    "Drinks": 24,
-    "Sauces & Condiments": 6,
-    "Packaging & Delivery": 20,
-    "Cleaning Materials": 10,
-    "Stationery": 10,
-    "Oils & Gas": 5,
-    "Salt & Spices": 5,
-    "Others": 5,
-}
-
-
-@app.route('/')
-def dashboard():
-    """
-    Render the inventory dashboard.  Items are grouped by category and
-    subdivided into three stock statuses: needs to buy (quantity <= 0), low
-    stock (quantity below its defined threshold) and good (quantity >= threshold).
-    The resulting structure `grouped_items` is a dictionary keyed by category
-    mapping to another dict with keys 'needs', 'low' and 'good'.
-    """
+@app.before_first_request
+def ensure_db():
+    """Ensure the database exists before handling any requests."""
     init_db()
+
+
+@app.route("/")
+def dashboard():
+    """Display the dashboard overview with summary metrics and a category breakdown."""
     conn = get_db_connection()
-    items = conn.execute('SELECT * FROM inventory ORDER BY category, item_name').fetchall()
+    rows = conn.execute("SELECT * FROM inventory").fetchall()
     conn.close()
 
-    # Prepare grouped data
-    grouped_items: dict[str, dict[str, list]] = {}
-    for item in items:
-        category = item['category']
-        grouped_items.setdefault(category, {'needs': [], 'low': [], 'good': []})
-        qty = item['quantity']
-        threshold = item['threshold']
-        if qty <= 0:
-            grouped_items[category]['needs'].append(item)
-        elif qty < threshold:
-            grouped_items[category]['low'].append(item)
-        else:
-            grouped_items[category]['good'].append(item)
+    # Compute summary metrics
+    total_items = len(rows)
+    low_items = sum(1 for row in rows if row["quantity"] < row["threshold"] and row["quantity"] > 0)
+    out_of_stock = sum(1 for row in rows if row["quantity"] == 0)
+    good_items = total_items - low_items - out_of_stock
 
-    # Compute summary metrics for the dashboard
-    total_items = len(items)
-    # Count the number of items in each status bucket
-    needs_count = sum(len(cats['needs']) for cats in grouped_items.values())
-    low_count = sum(len(cats['low']) for cats in grouped_items.values())
-    good_count = sum(len(cats['good']) for cats in grouped_items.values())
-    return render_template(
-        'dashboard.html',
-        grouped_items=grouped_items,
-        total_items=total_items,
-        needs_count=needs_count,
-        low_count=low_count,
-        good_count=good_count,
-    )
+    # Group items by category and stock status
+    grouped = {}
+    for row in rows:
+        cat = row["category"]
+        status = (
+            "needs"
+            if row["quantity"] == 0
+            else "low"
+            if row["quantity"] < row["threshold"]
+            else "good"
+        )
+        grouped.setdefault(cat, {"needs": [], "low": [], "good": []})
+        grouped[cat][status].append(row)
+
+    summary = {
+        "total": total_items,
+        "low": low_items,
+        "out": out_of_stock,
+        "good": good_items,
+    }
+    return render_template("dashboard.html", summary=summary, grouped=grouped)
 
 
-@app.route('/inventory', methods=['GET', 'POST'])
+@app.route("/inventory", methods=["GET", "POST"])
 def inventory():
-    """Display and process the inventory update form."""
-    init_db()
+    """Display inventory details and allow bulk updating of quantities and thresholds."""
     conn = get_db_connection()
-    if request.method == 'POST':
-        # Determine if this is an update to an existing item or threshold
-        if 'update_id' in request.form:
-            # Update the quantity (and optionally threshold) of an existing item
-            item_id = request.form.get('update_id')
-            quantity = request.form.get('quantity')
-            threshold = request.form.get('threshold')
-            if item_id and quantity is not None:
-                # Only update the fields provided
-                if threshold:
+    if request.method == "POST":
+        # Bulk update.  Expect form fields like quantity_<id> and threshold_<id>
+        for key, value in request.form.items():
+            if key.startswith("quantity_"):
+                try:
+                    item_id = int(key.split("_")[1])
+                except (IndexError, ValueError):
+                    continue
+                try:
+                    quantity = int(value)
+                except ValueError:
+                    quantity = 0
+                # threshold may not exist if user didn't change
+                threshold_value = request.form.get(f"threshold_{item_id}")
+                if threshold_value is not None:
+                    try:
+                        threshold = int(threshold_value)
+                    except ValueError:
+                        threshold = 0
                     conn.execute(
-                        'UPDATE inventory SET quantity = ?, threshold = ? WHERE id = ?',
-                        (int(quantity), int(threshold), int(item_id)),
+                        "UPDATE inventory SET quantity = ?, threshold = ? WHERE id = ?",
+                        (quantity, threshold, item_id),
                     )
                 else:
                     conn.execute(
-                        'UPDATE inventory SET quantity = ? WHERE id = ?',
-                        (int(quantity), int(item_id)),
+                        "UPDATE inventory SET quantity = ? WHERE id = ?",
+                        (quantity, item_id),
                     )
-                conn.commit()
-                flash('Item updated successfully!', 'success')
-        # When adding a new item, the form is handled by the /add route
-    items = conn.execute('SELECT * FROM inventory ORDER BY category, item_name').fetchall()
-    conn.close()
-    # Provide categories list for the add form
-    categories = list(DEFAULT_INVENTORY.keys())
-    return render_template('update.html', items=items, categories=categories)
-
-
-@app.route('/add', methods=['POST'])
-def add_item():
-    """Handle adding a new item to the inventory."""
-    init_db()
-    conn = get_db_connection()
-    item_name = request.form.get('item_name')
-    quantity = request.form.get('quantity')
-    category = request.form.get('category')
-    threshold = request.form.get('threshold')
-    if item_name and quantity is not None and category:
-        # Use provided threshold or default one for the category
-        if threshold:
-            th_value = int(threshold)
-        else:
-            th_value = DEFAULT_THRESHOLDS.get(category, 5)
-        conn.execute(
-            'INSERT INTO inventory (item_name, category, quantity, threshold) VALUES (?, ?, ?, ?)',
-            (item_name.strip(), category, int(quantity), th_value),
-        )
         conn.commit()
-        flash(f'Added new item "{item_name.strip()}"!', 'success')
+        conn.close()
+        flash("Inventory updated successfully!", "success")
+        return redirect(url_for("inventory"))
+
+    # GET request: fetch items sorted by category
+    rows = conn.execute(
+        "SELECT * FROM inventory ORDER BY category, item_name"
+    ).fetchall()
     conn.close()
-    return redirect(url_for('inventory'))
+    return render_template("update.html", items=rows)
 
 
-if __name__ == '__main__':
-    # Enable debug mode for development convenience. In production, disable debug.
-    app.run(debug=True, host='0.0.0.0', port=5000)
+@app.route("/order", methods=["GET", "POST"])
+def order():
+    """Display items below or equal to threshold and allow the user to generate an order message."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM inventory ORDER BY category, item_name"
+    ).fetchall()
+    conn.close()
+    # Filter for low or out of stock items
+    order_items = []
+    for row in rows:
+        if row["quantity"] <= row["threshold"]:
+            # Suggest ordering enough to double the threshold minus current quantity
+            suggested = max(row["threshold"] * 2 - row["quantity"], row["threshold"])
+            order_items.append(
+                {
+                    "id": row["id"],
+                    "name": row["item_name"],
+                    "category": row["category"],
+                    "current_qty": row["quantity"],
+                    "threshold": row["threshold"],
+                    "suggested_order": suggested,
+                }
+            )
+
+    if request.method == "POST":
+        # Build order message from submitted quantities and notes
+        lines = []
+        for item in order_items:
+            qty_str = request.form.get(f"order_qty_{item['id']}")
+            note = request.form.get(f"note_{item['id']}")
+            try:
+                qty = int(qty_str) if qty_str else 0
+            except ValueError:
+                qty = 0
+            if qty > 0:
+                line = f"{item['name']} x {qty}"
+                if note:
+                    line += f" ({note})"
+                lines.append(line)
+        if not lines:
+            flash("No items selected for ordering.", "warning")
+            return redirect(url_for("order"))
+        message = "ORDER LIST - AJ BURGERS\n" + "\n".join(lines)
+        encoded = quote(message)
+        whatsapp_url = f"https://api.whatsapp.com/send?text={encoded}"
+        return render_template(
+            "order_message.html", order_message=message, whatsapp_url=whatsapp_url
+        )
+    return render_template("order.html", order_items=order_items)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
