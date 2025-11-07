@@ -609,6 +609,29 @@ html, body {
   background-color: #fff;
 }
 
+/* Simplified item fields for inventory page */
+.item-header-single {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.item-header-single .item-category {
+  font-size: 0.75rem;
+  color: var(--dark);
+  opacity: 0.7;
+}
+.item-field {
+  margin-bottom: 0.75rem;
+}
+.item-field label {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: var(--dark);
+  opacity: 0.8;
+}
+
 /* Range slider styling for quantity */
 .qty-slider {
   width: 100%;
