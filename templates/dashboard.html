@@ -36,46 +36,5 @@
     </a>
   </div>
 
-  <div class="category-cards">
-    {% for category, statuses in grouped.items() %}
-      <div class="category-card">
-        <h3>{{ category }}</h3>
-        <div class="status-columns">
-          <div class="status-column">
-            <h4>Needs to buy</h4>
-            <ul>
-              {% for item in statuses.needs %}
-                <li>{{ item.item_name }} <span class="badge needs">0/{{ item.threshold }}</span></li>
-              {% endfor %}
-              {% if not statuses.needs %}
-                <li>No items</li>
-              {% endif %}
-            </ul>
-          </div>
-          <div class="status-column">
-            <h4>Low Stock</h4>
-            <ul>
-              {% for item in statuses.low %}
-                <li>{{ item.item_name }} <span class="badge low">{{ item.quantity }}/{{ item.threshold }}</span></li>
-              {% endfor %}
-              {% if not statuses.low %}
-                <li>No items</li>
-              {% endif %}
-            </ul>
-          </div>
-          <div class="status-column">
-            <h4>Good</h4>
-            <ul>
-              {% for item in statuses.good %}
-                <li>{{ item.item_name }} <span class="badge good">{{ item.quantity }}/{{ item.threshold }}</span></li>
-              {% endfor %}
-              {% if not statuses.good %}
-                <li>No items</li>
-              {% endif %}
-            </ul>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
+  <!-- Category breakdown removed for simplified dashboard -->
 {% endblock %}
