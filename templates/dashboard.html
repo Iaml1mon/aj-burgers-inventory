@@ -1,103 +1,68 @@
 {% extends 'base.html' %}
 
+{% block title %}Dashboard - AJ Burgers{% endblock %}
+
 {% block content %}
-<h2 class="page-title">Inventory Dashboard</h2>
-
-{# Summary cards showing counts of each status #}
-{% if grouped_items %}
-    <div class="summary-cards">
-        <div class="summary-card">
-            <div class="title">Total Items</div>
-            <div class="value">{{ total_items }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="title">Needs to Buy</div>
-            <div class="value text-danger">{{ needs_count }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="title">Low Stock</div>
-            <div class="value text-warning">{{ low_count }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="title">All Good</div>
-            <div class="value text-success">{{ good_count }}</div>
-        </div>
+  <h1 class="page-title">Dashboard</h1>
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="count">{{ summary.total }}</div>
+      <div class="label">Total Items</div>
     </div>
-
-    {# Category cards #}
-    {% for category, data in grouped_items.items() %}
-    <div class="card">
-        <div class="card-header">{{ category }}</div>
-        <div class="card-body">
-            <div class="category-row">
-                <div class="category-column">
-                    <h6 class="text-danger">Needs to Buy</h6>
-                    {% if data['needs'] %}
-                        <ul class="list-group">
-                            {% for item in data['needs'] %}
-                                <li class="list-group-item">
-                                    <div class="flex-between">
-                                        <span>{{ item['item_name'] }}</span>
-                                        <span class="text-danger">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-danger" style="width: 0%"></div>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted">Nothing to buy.</p>
-                    {% endif %}
-                </div>
-                <div class="category-column">
-                    <h6 class="text-warning">Low Stock</h6>
-                    {% if data['low'] %}
-                        <ul class="list-group">
-                            {% for item in data['low'] %}
-                                {% set percentage = (100 * item['quantity'] // item['threshold']) if item['threshold'] else 0 %}
-                                <li class="list-group-item">
-                                    <div class="flex-between">
-                                        <span>{{ item['item_name'] }}</span>
-                                        <span class="text-warning">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted">All items above threshold.</p>
-                    {% endif %}
-                </div>
-                <div class="category-column">
-                    <h6 class="text-success">All Good</h6>
-                    {% if data['good'] %}
-                        <ul class="list-group">
-                            {% for item in data['good'] %}
-                                {% set percentage = (100 * item['quantity'] // item['threshold']) if item['threshold'] else 0 %}
-                                <li class="list-group-item">
-                                    <div class="flex-between">
-                                        <span>{{ item['item_name'] }}</span>
-                                        <span class="text-success">{{ item['quantity'] }}/{{ item['threshold'] }}</span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-success" style="width: {{ percentage }}%"></div>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted">No items meet or exceed threshold.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div class="summary-card">
+      <div class="count">{{ summary.out }}</div>
+      <div class="label">Out of Stock</div>
     </div>
+    <div class="summary-card">
+      <div class="count">{{ summary.low }}</div>
+      <div class="label">Low Stock</div>
+    </div>
+    <div class="summary-card">
+      <div class="count">{{ summary.good }}</div>
+      <div class="label">Good Stock</div>
+    </div>
+  </div>
+
+  <div class="category-cards">
+    {% for category, statuses in grouped.items() %}
+      <div class="category-card">
+        <h3>{{ category }}</h3>
+        <div class="status-columns">
+          <div class="status-column">
+            <h4>Needs to buy</h4>
+            <ul>
+              {% for item in statuses.needs %}
+                <li>{{ item.item_name }} <span class="badge needs">0/{{ item.threshold }}</span></li>
+              {% endfor %}
+              {% if not statuses.needs %}
+                <li>No items</li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="status-column">
+            <h4>Low Stock</h4>
+            <ul>
+              {% for item in statuses.low %}
+                <li>{{ item.item_name }} <span class="badge low">{{ item.quantity }}/{{ item.threshold }}</span></li>
+              {% endfor %}
+              {% if not statuses.low %}
+                <li>No items</li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="status-column">
+            <h4>Good</h4>
+            <ul>
+              {% for item in statuses.good %}
+                <li>{{ item.item_name }} <span class="badge good">{{ item.quantity }}/{{ item.threshold }}</span></li>
+              {% endfor %}
+              {% if not statuses.good %}
+                <li>No items</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
     {% endfor %}
-{% else %}
-    <p>No inventory data available.</p>
-{% endif %}
-
+  </div>
 {% endblock %}

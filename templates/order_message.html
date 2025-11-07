@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Summary - AJ Burgers{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Order Summary</h1>
+  <div class="order-summary">
+    <h3>Your Order:</h3>
+    <pre class="order-message-box">{{ order_message }}</pre>
+    <div class="order-share-actions">
+      <a href="{{ whatsapp_url }}" target="_blank" class="btn-save">Share via WhatsApp</a>
+      <button type="button" id="copyButton" class="btn-save">Copy to Clipboard</button>
+    </div>
+  </div>
+  <script>
+    document.getElementById('copyButton').addEventListener('click', function() {
+      const text = `{{ order_message|replace('`', '\\`') }}`;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Order copied to clipboard!');
+      });
+    });
+  </script>
+{% endblock %}

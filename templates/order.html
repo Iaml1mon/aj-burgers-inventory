@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Today - AJ Burgers{% endblock %}
+
+{% block content %}
+  <h1 class="page-title">Order Today</h1>
+  {% if not order_items %}
+    <p>All items are above their thresholds. There is nothing to order today!</p>
+  {% else %}
+    <form method="post" class="order-form">
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Item</th>
+            <th>Current Qty</th>
+            <th>Threshold</th>
+            <th>Order Qty</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order_items %}
+            <tr>
+              <td>{{ item.category }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.current_qty }}</td>
+              <td>{{ item.threshold }}</td>
+              <td><input type="number" name="order_qty_{{ item.id }}" value="{{ item.suggested_order }}" min="0" /></td>
+              <td><input type="text" name="note_{{ item.id }}" placeholder="Optional" /></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="text-align: right;">
+        <button type="submit" class="btn-save">Generate Order</button>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}
