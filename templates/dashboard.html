@@ -4,23 +4,35 @@
 
 {% block content %}
   <h1 class="page-title">Dashboard</h1>
-  <div class="summary-cards">
-    <!-- Each summary card links to the inventory page with an appropriate filter -->
-    <a href="{{ url_for('inventory') }}" class="summary-card">
-      <div class="count">{{ summary.total }}</div>
-      <div class="label">Total Items</div>
+  <!-- Mobile‑friendly summary section with icons and coloured accents -->
+  <div class="summary-section">
+    <a href="{{ url_for('inventory') }}" class="summary-card total">
+      <div class="icon">📦</div>
+      <div class="info">
+        <div class="count">{{ summary.total }}</div>
+        <div class="label">Total Items</div>
+      </div>
     </a>
-    <a href="{{ url_for('inventory', filter='needs') }}" class="summary-card">
-      <div class="count">{{ summary.out }}</div>
-      <div class="label">Out of Stock</div>
+    <a href="{{ url_for('inventory', filter='needs') }}" class="summary-card needs">
+      <div class="icon">🔴</div>
+      <div class="info">
+        <div class="count">{{ summary.out }}</div>
+        <div class="label">Out of Stock</div>
+      </div>
     </a>
-    <a href="{{ url_for('inventory', filter='low') }}" class="summary-card">
-      <div class="count">{{ summary.low }}</div>
-      <div class="label">Low Stock</div>
+    <a href="{{ url_for('inventory', filter='low') }}" class="summary-card low">
+      <div class="icon">🟡</div>
+      <div class="info">
+        <div class="count">{{ summary.low }}</div>
+        <div class="label">Low Stock</div>
+      </div>
     </a>
-    <a href="{{ url_for('inventory', filter='good') }}" class="summary-card">
-      <div class="count">{{ summary.good }}</div>
-      <div class="label">Good Stock</div>
+    <a href="{{ url_for('inventory', filter='good') }}" class="summary-card good">
+      <div class="icon">🟢</div>
+      <div class="info">
+        <div class="count">{{ summary.good }}</div>
+        <div class="label">Good Stock</div>
+      </div>
     </a>
   </div>
 
