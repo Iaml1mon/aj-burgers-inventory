@@ -169,7 +169,7 @@ def inventory():
     """Display inventory details and allow bulk updating of quantities and thresholds."""
     conn = get_db_connection()
     if request.method == "POST":
-        # Bulk update.  Expect form fields like quantity_<id> and threshold_<id>
+        # Bulk update. Expect form fields like quantity_<id> and threshold_<id>
         for key, value in request.form.items():
             if key.startswith("quantity_"):
                 try:
@@ -200,13 +200,35 @@ def inventory():
         conn.close()
         flash("Inventory updated successfully!", "success")
         return redirect(url_for("inventory"))
-
-    # GET request: fetch items sorted by category
+    # GET request: fetch all items and compute status
     rows = conn.execute(
         "SELECT * FROM inventory ORDER BY category, item_name"
     ).fetchall()
     conn.close()
-    return render_template("update.html", items=rows)
+    items = []
+    for row in rows:
+        status = (
+            "needs"
+            if row["quantity"] == 0
+            else "low"
+            if row["quantity"] < row["threshold"]
+            else "good"
+        )
+        items.append(
+            {
+                "id": row["id"],
+                "item_name": row["item_name"],
+                "category": row["category"],
+                "quantity": row["quantity"],
+                "threshold": row["threshold"],
+                "status": status,
+            }
+        )
+    # Determine current filter from query parameter
+    current_filter = request.args.get("filter", "all")
+    if current_filter in {"needs", "low", "good"}:
+        items = [item for item in items if item["status"] == current_filter]
+    return render_template("update.html", items=items, current_filter=current_filter)
 
 
 @app.route("/order", methods=["GET", "POST"])
